@@ -1,36 +1,61 @@
 import streamlit as st
 from rag_chain import get_chat_response
+from pathlib import Path
+import base64
 
-# ----------------- Streamlit UI -----------------
-st.set_page_config(page_title="RDL Assistant", page_icon="🤖", layout="centered")
+# ---------- Config ----------
+LOGO_LOCAL = Path(r"C:\Users\gerar\Desktop\rdl_data\assets\RDL_LOGO_2024 J.png")
+ASSISTANT_LOGO = Path(r"C:\Users\gerar\Desktop\rdl_data\assets\RDL__.png")  
+width_px = 100  # header logo size
 
-st.title("🤖 RDL Assistant")
-st.write("Ask me anything related to your knowledge base!")
+# ---------- page config ----------
+st.set_page_config(
+    page_title="RDL Assistant",
+    page_icon=str(LOGO_LOCAL),
+    layout="centered"
+)
 
-# Initialize chat history
+# ---------- prepare inline image as data URI ----------
+def img_to_data_uri(path: Path):
+    img_bytes = path.read_bytes()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    return f"data:image/png;base64,{img_b64}"
+
+header_img = img_to_data_uri(LOGO_LOCAL)
+assistant_img = img_to_data_uri(ASSISTANT_LOGO)
+
+# ---------- render inline title with alignment ----------
+st.markdown(
+    f"""
+    <div style="display:flex; align-items:center; gap:14px;">
+        <img src="{header_img}" style="width:{width_px}px; height:auto;"/>
+        <span style="font-size:48px; font-weight:700;">Assistant</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.write("Ask me anything ! I'm here to help you!")
+
+# ---------- chat history ----------
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    avatar = None
+    if msg["role"] == "assistant":
+        avatar = assistant_img  # custom assistant logo
+    with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# User input
+# ---------- user input ----------
 if prompt := st.chat_input("Type your message..."):
-    # Save user message
     st.session_state.messages.append({"role": "user", "content": prompt})
-
-    # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Get response from RAG chain
     response = get_chat_response(prompt)
 
-    # Save assistant response
     st.session_state.messages.append({"role": "assistant", "content": response})
-
-    # Display assistant message
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=assistant_img):
         st.markdown(response)
